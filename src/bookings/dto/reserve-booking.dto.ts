@@ -1,12 +1,11 @@
-import { IsInt, IsString, IsNotEmpty } from 'class-validator';
+import { IsInt, IsNotEmpty } from "class-validator";
 
 export class ReserveBookingDto {
   @IsInt()
   @IsNotEmpty()
   event_id: number;
 
-  @IsString()
+  @IsInt()
   @IsNotEmpty()
-  user_id: string;
+  user_id: number;
 }
-
