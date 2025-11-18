@@ -16,21 +16,16 @@ export class BookingsService {
     const lockId = bookingData.event_id;
     
     return await this.dataSource.transaction(async (manager) => {
-      const lockResult = await manager.query(
-        'SELECT pg_try_advisory_xact_lock($1) as locked',
-        [lockId],
-      );
+      await manager.query("SELECT pg_advisory_xact_lock($1)", [lockId]);
 
-      if (!lockResult[0]?.locked) {
-        throw new BadRequestException('Слишком много одновременных запросов. Попробуйте позже.');
-      }
-
-      const event = await manager.findOne(Event, {
-        where: { id: bookingData.event_id },
-      });
+      const event = await manager
+        .createQueryBuilder(Event, "event")
+        .setLock("pessimistic_write")
+        .where("event.id = :id", { id: bookingData.event_id })
+        .getOne();
 
       if (!event) {
-        throw new NotFoundException('Событие не найдено');
+        throw new NotFoundException("Событие не найдено");
       }
 
       const existingBooking = await manager.findOne(Booking, {
@@ -41,15 +36,20 @@ export class BookingsService {
       });
 
       if (existingBooking) {
-        throw new ConflictException('Вы уже забронировали место на это событие');
+        throw new ConflictException(
+          "Вы уже забронировали место на это событие"
+        );
       }
 
-      const bookedCount = await manager.count(Booking, {
-        where: { eventId: bookingData.event_id },
-      });
+      const bookedCount = await manager
+        .createQueryBuilder(Booking, "booking")
+        .where("booking.eventId = :eventId", { eventId: bookingData.event_id })
+        .getCount();
 
       if (bookedCount >= event.totalSeats) {
-        throw new BadRequestException('Все места на это событие уже забронированы');
+        throw new BadRequestException(
+          "Все места на это событие уже забронированы"
+        );
       }
 
       const booking = manager.create(Booking, {
