@@ -67,6 +67,19 @@ export class BookingsService {
     });
   }
 
+  // Новый метод для отмены бронирования
+  async cancelBooking(bookingId: number): Promise<void> {
+    return await this.dataSource.transaction(async (manager) => {
+      const booking = await manager.findOne(Booking, { where: { id: bookingId } });
+
+      if (!booking) {
+        throw new NotFoundException("Бронирование не найдено");
+      }
+
+      await manager.remove(Booking, booking);
+    });
+  }
+
   async getTop(params: GetTopParams) {
     const now = new Date();
     let startDate: Date;
