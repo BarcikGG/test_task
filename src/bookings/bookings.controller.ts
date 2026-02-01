@@ -6,6 +6,8 @@ import {
   HttpStatus,
   Query,
   Get,
+  Delete,
+  Param,
 } from "@nestjs/common";
 import { BookingsService } from "./bookings.service";
 import { ReserveBookingDto } from "./dto/reserve-booking.dto";
@@ -26,5 +28,12 @@ export class BookingsController {
   @HttpCode(HttpStatus.OK)
   async getTop(@Query() params: GetTopParams) {
     return this.bookingsService.getTop(params);
+  }
+
+  @Delete("cancel/:id")
+  @HttpCode(HttpStatus.OK)
+  async cancelBooking(@Param('id') id: string) {
+    const result = await this.bookingsService.cancelBooking(id);
+    return { success: true, result };
   }
 }
